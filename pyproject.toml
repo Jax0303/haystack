@@ -60,6 +60,7 @@ dependencies = [
   "docstring-parser",       # ComponentTool
   "filetype",               # MIME type guessing for ImageContent
   "haystack-experimental",
+  "google-generativeai>=0.4.0",              # GeminiProGenerator dependency
 ]
 
 [tool.hatch.envs.default]
