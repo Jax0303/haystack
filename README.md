@@ -1,18 +1,108 @@
 # RAG Pipeline (2024-2025 Experimental Corpus)
 
-This repo contains scripts to build a Retrieval-Augmented Generation (RAG) experiment with latest 2024-2025 papers.
+End-to-end Retrieval-Augmented Generation pipeline built around **latest (2024-2025) papers** + Google Gemini.
 
 ## Contents
-1. **Dataset generation** – `create_realistic_dataset.py` (400 MB synthetic baseline)
-2. **PDF pipeline** – `get_cv_papers_arxiv.py` + `run_cv_pipeline.sh` (download & parse 500 cs.CV papers)
-3. **Indexing** – `index_rag_dataset.py` (FAISS + Gemini-2.5-Pro)
+1. Synthetic baseline dataset (≈400 MB)  
+2. Computer-Vision PDF pipeline (500 cs.CV papers)  
+3. FAISS index builder & Gemini query CLI  
+4. One-shot shell pipeline  
 
-Run the full CV pipeline:
+---
+## 0. Quick Start (10 commands)
 ```bash
-bash run_cv_pipeline.sh 500
+# clone & enter
+ git clone https://github.com/Jax0303/haystack.git
+ cd haystack
+
+# create / activate venv (Python ≥3.9)
+ python3 -m venv venv_rag
+ source venv_rag/bin/activate
+
+# install minimal deps and run full CV pipeline (≈20 min)
+ bash run_cv_pipeline.sh 500
+
+# (optional) set Gemini key once per shell
+ export GOOGLE_API_KEY="<YOUR_GEMINI_KEY>"
+ python index_rag_dataset.py ask "What progress was made in computer vision in 2025?"
 ```
-Then ask questions:
+
+---
+## 1. Scripts overview
+| file | role |
+|------|------|
+| `create_realistic_dataset.py` | synthetic 400 MB corpus (already generated) |
+| `get_cv_papers_arxiv.py`      | download & parse 2024-25 **cs.CV** PDFs (PyMuPDF + multiprocessing) |
+| `run_cv_pipeline.sh`          | installs deps → run `get_cv_papers_arxiv.py` → merge & rebuild index |
+| `merge_and_rebuild.py`        | concat new JSONL with baseline and rebuild FAISS |
+| `index_rag_dataset.py`        | build / query FAISS index (Gemini 2.5-Pro back-end) |
+
+Generated artefacts (large, Git-ignored):
+```
+cv_pdfs/                         # raw PDFs
+cv_papers_2024_25.jsonl.gz       # parsed CV corpus
+rag_dataset_2024_25.jsonl.gz     # 400 MB baseline
+rag_dataset_cv.jsonl.gz          # merged baseline+CV
+rag_cv_faiss.index / rag_cv_meta.pkl
+```
+
+---
+## 2. Re-running pipeline step-by-step
+### 2-1. Install/activate venv
 ```bash
-export GOOGLE_API_KEY="<Your_Gemini_Key>"
-python index_rag_dataset.py ask --top_k 15 "What progress was made in computer vision in 2025?"
+python3 -m venv venv_rag
+source venv_rag/bin/activate
+pip install --upgrade requests tqdm pymupdf sentence-transformers faiss-cpu google-generativeai nltk
+python -c "import nltk, nltk.downloader; nltk.downloader.download('punkt')"
 ```
+
+### 2-2. Synthetic dataset (optional)
+Already created (`rag_dataset_2024_25.jsonl.gz`). Re-generate if needed:
+```bash
+python create_realistic_dataset.py
+```
+
+### 2-3. Download & parse PDFs
+```bash
+python get_cv_papers_arxiv.py --max_pdf 500      # resume safe; skips existing PDFs
+```
+
+### 2-4. Merge & rebuild index
+```bash
+python merge_and_rebuild.py                      # produces rag_cv_faiss.index
+```
+
+### 2-5. Query with Gemini
+```bash
+export GOOGLE_API_KEY="<YOUR_KEY>"
+python index_rag_dataset.py ask --top_k 20 "progress in computer vision in 2025?"
+```
+
+---
+## 3. Resume / continue download
+The PDF downloader is **idempotent**:
+* Existing files in `cv_pdfs/` are skipped.
+* `get_cv_papers_arxiv.py` can be rerun with the same `--max_pdf` to fetch only missing items.
+
+After additional downloads, run `merge_and_rebuild.py` (or simply `bash run_cv_pipeline.sh 500`) to update the index.
+
+---
+## 4. Git hygiene
+Large binaries & local env are ignored via `.gitignore`:
+```
+venv_rag/
+cv_pdfs/
+*.gz
+*.index
+*.pkl
+```
+
+---
+## 5. Troubleshooting
+* **Slow parsing?** PyMuPDF + multiprocessing already enabled (≈10× faster than pdfminer). Adjust `--max_pdf` or `--workers` inside script if needed.
+* **Gemini returns _I don't know_**: likely no relevant chunk – add more papers and rebuild.
+* **Authentication**: Git pushes require PAT (set once, then cached).
+
+---
+© 2025 Jax0303  
+Feel free to fork / PR.
