@@ -24,7 +24,7 @@ import json
 import os
 import sys
 import time
-from dataclasses import dataclass, field
+
 from pathlib import Path
 from typing import List, Sequence
 
@@ -35,6 +35,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores import Chroma
 from langchain.llms import HuggingFaceHub
 from langchain.chains import RetrievalQA
+from langchain.schema.retriever import BaseRetriever
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
@@ -113,13 +114,14 @@ def load_and_split_docs(
 # Vector store wrapper with ACL-aware retrieval
 # ---------------------------------------------------------------------------
 
-@dataclass
-class AclRetriever:
+class AclRetriever(BaseRetriever):
     """Wrap an existing vector store and enforce ACL filtering."""
 
-    vectordb: Chroma
-    allowed_roles: Sequence[str] = field(default_factory=lambda: ["*"])
-    top_k: int = 4
+    def __init__(self, vectordb: Chroma, allowed_roles: Sequence[str] = None, top_k: int = 4):
+        super().__init__()
+        self.vectordb = vectordb
+        self.allowed_roles = allowed_roles or ["*"]
+        self.top_k = top_k
 
     def _is_authorised(self, doc: Document) -> bool:
         doc_roles = doc.metadata.get("acl", ["*"])
@@ -133,7 +135,7 @@ class AclRetriever:
         return authorised[: self.top_k]
 
     # Expose as LangChain retriever interface
-    def get_relevant_documents(self, query: str) -> list[Document]:  # noqa: D401
+    def _get_relevant_documents(self, query: str) -> list[Document]:  # noqa: D401
         return self.similarity_search(query)
 
 
@@ -231,7 +233,11 @@ class RagEngine:
         hallucination_threshold: float = 0.35,
     ) -> dict:
         retriever = AclRetriever(self.vectordb, allowed_roles=user_roles, top_k=top_k)
-        llm = HuggingFaceHub(repo_id=llm_repo, model_kwargs={"temperature": 0.0})
+        llm = HuggingFaceHub(
+            repo_id=llm_repo, 
+            model_kwargs={"temperature": 0.0},
+            task="text2text-generation"
+        )
         qa_chain = RetrievalQA.from_chain_type(
             llm=llm,
             retriever=retriever,

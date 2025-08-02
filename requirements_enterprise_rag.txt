@@ -1,0 +1,11 @@
+langchain>=0.1.16
+chromadb>=0.4.24
+huggingface_hub>=0.20
+sentence-transformers>=2.6
+numpy>=1.26
+langchain-community>=0.0.28
+langchain-text-splitters>=0.0.2
+beautifulsoup4>=4.12
+tiktoken>=0.6
+pandas>=2.0
+datasets>=2.18

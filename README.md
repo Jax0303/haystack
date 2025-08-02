@@ -1,46 +1,51 @@
-# RAG Pipeline (2024-2025 Experimental Corpus)
+# Enterprise RAG with HERB Dataset
 
-End-to-end Retrieval-Augmented Generation pipeline built around **latest (2024-2025) papers** + Google Gemini.
+기업 특화 Retrieval-Augmented Generation 시스템 with **HERB (Heterogeneous Enterprise RAG Benchmark)** 데이터셋.
 
-## 🚀 Latest Updates (v2.0)
-### New Features
-- **🧠 Advanced Chunking Methods**: Semantic & Agentic chunking for better context coherence
-- **🌏 Korean Language Support**: Native Korean Q&A with multilingual BGE embeddings  
-- **🔧 Intelligent Text Segmentation**: LLM-guided chunking using Gemini for logical breakpoints
-- **📊 Configurable Chunking**: Choose between simple, semantic, or agentic chunking methods
-- **🔍 Enhanced Search Quality**: Semantic similarity-based chunk grouping for better retrieval
+## 🚀 Latest Updates (v3.0 - Enterprise Edition)
+### 🏢 Enterprise Features
+- **📊 HERB Dataset Integration**: Salesforce AI Research의 39K+ 엔터프라이즈 아티팩트 활용
+- **🔐 Role-Based Access Control (RBAC)**: 사용자 역할별 문서 접근 제어
+- **🎯 Hallucination Detection**: 신뢰도 점수 & 환각 탐지 메커니즘
+- **📝 Audit Logging**: 모든 질의-응답 불변 로그 저장 (컴플라이언스)
+- **🔍 Multi-Artifact Support**: Slack, 문서, 회의록, PR 등 다양한 소스 통합
 
-### Technical Improvements
-- Added comprehensive Korean comments throughout codebase
-- Implemented fallback strategies for PyTorch compatibility issues
-- Enhanced error handling and dependency management
-- Improved CLI with chunking method selection
+### 🛠️ Technical Improvements  
+- **Chrome Vector DB**: 임베딩 저장 & 유사도 검색 최적화
+- **LangChain Integration**: 모듈식 RAG 파이프라인 구조
+- **CLI Interface**: 간편한 인덱싱 & 질의 명령어 지원
+- **Enterprise JSON Parsing**: HERB 실제 구조에 맞춘 다중 아티팩트 파싱
 
-## Contents
-1. Synthetic baseline dataset (≈400 MB)  
-2. Computer-Vision PDF pipeline (500 cs.CV papers)  
-3. FAISS index builder & Gemini query CLI  
-4. One-shot shell pipeline  
-5. **NEW**: Advanced chunking methods (semantic/agentic)
-6. **NEW**: Korean language query support
+## 📁 Project Structure
+```
+├── index_herb_dataset.py      # HERB 데이터셋 다운로드 & 인덱싱
+├── advanced_rag.py            # 엔터프라이즈 RAG 엔진 (RBAC, 환각탐지)
+├── requirements_enterprise_rag.txt  # 필요 패키지 목록
+├── HERB/                      # GitHub clone된 HERB 리포지토리
+└── chroma_db/                 # 벡터 인덱스 저장소
+```
 
----
-## 0. Quick Start (10 commands)
+## 🚀 Quick Start (Enterprise RAG)
 ```bash
-# clone & enter
- git clone https://github.com/Jax0303/haystack.git
- cd haystack
+# 1. 리포지토리 클론
+git clone https://github.com/Jax0303/haystack-2.git
+cd haystack-2
 
-# create / activate venv (Python ≥3.9)
- python3 -m venv venv_rag
- source venv_rag/bin/activate
+# 2. 가상환경 설정
+python3 -m venv .venv
+source .venv/bin/activate
 
-# install minimal deps and run full CV pipeline (≈20 min)
- bash run_cv_pipeline.sh 500
+# 3. 의존성 설치
+pip install -r requirements_enterprise_rag.txt
 
-# (optional) set Gemini key once per shell
- export GOOGLE_API_KEY="<YOUR_GEMINI_KEY>"
- python index_rag_dataset.py ask "What progress was made in computer vision in 2025?"
+# 4. HuggingFace 토큰 설정 (무료 계정 가능)
+export HUGGINGFACEHUB_API_TOKEN=hf_your_token_here
+
+# 5. HERB 데이터셋 인덱싱 (최초 1회, 약 5분)
+python index_herb_dataset.py --max_files 0  # 전체 또는 --max_files 100 (빠른 테스트)
+
+# 6. 엔터프라이즈 RAG 질의 실행
+python advanced_rag.py query "What features did customers complain about?" --top_k 6 --roles "*"
 ```
 
 ---
