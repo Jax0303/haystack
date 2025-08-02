@@ -166,3 +166,6 @@ haystack/json-schemas
 
 # uv
 uv.lock
+HERB/
+chroma_db/
+debug_herb.py

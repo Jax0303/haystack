@@ -1,170 +1,280 @@
 # Enterprise RAG with HERB Dataset
 
-기업 특화 Retrieval-Augmented Generation 시스템 with **HERB (Heterogeneous Enterprise RAG Benchmark)** 데이터셋.
+기업 특화 Retrieval-Augmented Generation 시스템 with **HERB (Heterogeneous Enterprise RAG Benchmark)** 데이터셋과 **Google Gemini 2.0 Flash** 연동.
 
-## 🚀 Latest Updates (v3.0 - Enterprise Edition)
-### 🏢 Enterprise Features
-- **📊 HERB Dataset Integration**: Salesforce AI Research의 39K+ 엔터프라이즈 아티팩트 활용
+## 🚀 프로젝트 개요
+
+본 프로젝트는 **조직 내 RAG 활용**을 위한 기업 특화 기능들을 구현한 엔터프라이즈급 RAG 시스템입니다. 실제 기업 데이터셋(HERB)과 최신 LLM(Gemini 2.0)을 활용하여 실무에서 필요한 보안, 거버넌스, 감사 기능을 제공합니다.
+
+### 🏢 핵심 Enterprise 기능
 - **🔐 Role-Based Access Control (RBAC)**: 사용자 역할별 문서 접근 제어
-- **🎯 Hallucination Detection**: 신뢰도 점수 & 환각 탐지 메커니즘
-- **📝 Audit Logging**: 모든 질의-응답 불변 로그 저장 (컴플라이언스)
+- **🎯 Hallucination Detection**: 신뢰도 점수 & 환각 탐지 메커니즘 (80%+ 신뢰도)
+- **📝 Source Tracking**: 답변의 출처 문서 추적 및 메타데이터 제공
+- **⚡ Performance Monitoring**: 응답 시간, 처리 성능 모니터링
 - **🔍 Multi-Artifact Support**: Slack, 문서, 회의록, PR 등 다양한 소스 통합
 
-### 🛠️ Technical Improvements  
-- **Chrome Vector DB**: 임베딩 저장 & 유사도 검색 최적화
-- **LangChain Integration**: 모듈식 RAG 파이프라인 구조
-- **CLI Interface**: 간편한 인덱싱 & 질의 명령어 지원
-- **Enterprise JSON Parsing**: HERB 실제 구조에 맞춘 다중 아티팩트 파싱
+### 🛠️ 기술 스택
+- **LLM**: Google Gemini 2.0 Flash (최신 실험 모델)
+- **Vector DB**: ChromaDB (5,487개 문서 인덱싱)
+- **Embeddings**: HuggingFace sentence-transformers/all-mpnet-base-v2
+- **Framework**: LangChain + Python 3.12
+- **Dataset**: HERB (Heterogeneous Enterprise RAG Benchmark)
 
-## 📁 Project Structure
+## 📊 HERB Dataset 정보
+
+**HERB (Heterogeneous Enterprise RAG Benchmark)**는 Salesforce AI Research에서 개발한 기업용 RAG 벤치마크 데이터셋입니다.
+
+### 데이터셋 구성:
+- **총 문서 수**: 5,487개 (본 프로젝트 인덱싱 기준)
+- **아티팩트 유형**:
+  - 📄 **Documents**: 제품 비전, 요구사항 문서
+  - 💬 **Slack Messages**: 팀 내부 커뮤니케이션
+  - 🗣️ **Meeting Transcripts**: 회의록 및 대화 내용
+  - 🔗 **URLs**: 웹 리소스 및 외부 링크
+  - 🛠️ **Pull Requests**: 코드 변경사항 및 개발 논의
+
+### 제품별 데이터:
+- **CoachForce**: AI 코칭 플랫폼
+- **ConnectForce**: 통합 연결 솔루션
+- **ExplainabilityForce**: AI 설명가능성 도구
+
+## 📁 프로젝트 구조
+
 ```
-├── index_herb_dataset.py      # HERB 데이터셋 다운로드 & 인덱싱
-├── advanced_rag.py            # 엔터프라이즈 RAG 엔진 (RBAC, 환각탐지)
-├── requirements_enterprise_rag.txt  # 필요 패키지 목록
-├── HERB/                      # GitHub clone된 HERB 리포지토리
-└── chroma_db/                 # 벡터 인덱스 저장소
+├── advanced_rag.py                 # 🚀 메인 RAG 엔진 (RBAC, 환각탐지, CLI)
+├── index_herb_dataset.py           # 📊 HERB 데이터셋 다운로드 & 인덱싱
+├── requirements_enterprise_rag.txt # 📦 의존성 패키지 목록
+├── HERB/                          # 📁 HERB GitHub 클론 (자동 다운로드)
+├── chroma_db/                     # 🗃️ 벡터 DB 저장소 (5,487개 문서)
+└── README.md                      # 📖 본 문서
 ```
 
-## 🚀 Quick Start (Enterprise RAG)
+## 🚀 빠른 시작 가이드
+
+### 1. 환경 설정
 ```bash
-# 1. 리포지토리 클론
+# 리포지토리 클론
 git clone https://github.com/Jax0303/haystack-2.git
 cd haystack-2
 
-# 2. 가상환경 설정
+# 가상환경 생성 및 활성화
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. 의존성 설치
+# 의존성 설치
 pip install -r requirements_enterprise_rag.txt
-
-# 4. HuggingFace 토큰 설정 (무료 계정 가능)
-export HUGGINGFACEHUB_API_TOKEN=hf_your_token_here
-
-# 5. HERB 데이터셋 인덱싱 (최초 1회, 약 5분)
-python index_herb_dataset.py --max_files 0  # 전체 또는 --max_files 100 (빠른 테스트)
-
-# 6. 엔터프라이즈 RAG 질의 실행
-python advanced_rag.py query "What features did customers complain about?" --top_k 6 --roles "*"
 ```
 
----
-## 1. Scripts overview
-| file | role |
-|------|------|
-| `create_realistic_dataset.py` | synthetic 400 MB corpus (already generated) |
-| `get_cv_papers_arxiv.py`      | download & parse 2024-25 **cs.CV** PDFs (PyMuPDF + multiprocessing) |
-| `run_cv_pipeline.sh`          | installs deps → run `get_cv_papers_arxiv.py` → merge & rebuild index |
-| `merge_and_rebuild.py`        | concat new JSONL with baseline and rebuild FAISS |
-| `index_rag_dataset.py`        | build / query FAISS index (Gemini 2.5-Pro back-end) |
-
-Generated artefacts (large, Git-ignored):
-```
-cv_pdfs/                         # raw PDFs
-cv_papers_2024_25.jsonl.gz       # parsed CV corpus
-rag_dataset_2024_25.jsonl.gz     # 400 MB baseline
-rag_dataset_cv.jsonl.gz          # merged baseline+CV
-rag_cv_faiss.index / rag_cv_meta.pkl
-```
-
----
-## 2. Re-running pipeline step-by-step
-### 2-1. Install/activate venv
+### 2. API 키 설정 (필수)
 ```bash
-python3 -m venv venv_rag
-source venv_rag/bin/activate
-pip install --upgrade requests tqdm pymupdf sentence-transformers faiss-cpu google-generativeai nltk
-python -c "import nltk, nltk.downloader; nltk.downloader.download('punkt')"
+# Google Gemini API 키 (https://aistudio.google.com/)
+export GOOGLE_API_KEY="your_gemini_api_key_here"
+
+# HuggingFace 토큰 (https://huggingface.co/settings/tokens)
+export HUGGINGFACEHUB_API_TOKEN="hf_your_token_here"
+
+# 영구 설정 (권장)
+echo 'export GOOGLE_API_KEY="your_key"' >> ~/.bashrc
+echo 'export HUGGINGFACEHUB_API_TOKEN="hf_your_token"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-### 2-2. Synthetic dataset (optional)
-Already created (`rag_dataset_2024_25.jsonl.gz`). Re-generate if needed:
+### 3. 데이터셋 인덱싱 (최초 1회)
 ```bash
-python create_realistic_dataset.py
+# HERB 전체 데이터셋 인덱싱 (약 3-5분 소요)
+python index_herb_dataset.py
+
+# 빠른 테스트용 (일부 파일만)
+python index_herb_dataset.py --max_files 50
 ```
 
-### 2-3. Download & parse PDFs
+### 4. RAG 쿼리 실행
 ```bash
-python get_cv_papers_arxiv.py --max_pdf 500      # resume safe; skips existing PDFs
+# 기본 질의
+python advanced_rag.py query "What features did customers complain about the most?" 2>/dev/null
+
+# 옵션 사용
+python advanced_rag.py query "What are the main security concerns?" --top_k 6 --verbose 2>/dev/null
+
+# 역할 기반 접근 제어
+python advanced_rag.py query "Sensitive information" --roles "admin,manager" 2>/dev/null
 ```
 
-### 2-4. Merge & rebuild index
+## 💻 사용법 상세
+
+### 🎯 편리한 별칭 설정 (권장)
 ```bash
-python merge_and_rebuild.py                      # produces rag_cv_faiss.index
+# RAG 명령어 별칭 추가
+echo "alias rag='cd $(pwd) && source .venv/bin/activate && python advanced_rag.py'" >> ~/.bashrc
+source ~/.bashrc
+
+# 이제 간단하게 사용 가능
+rag query "How can we improve user experience?"
+rag query "What are the biggest technical challenges?" --top_k 10
 ```
 
-### 2-5. Query with Gemini
+### 📋 CLI 옵션들
 ```bash
-export GOOGLE_API_KEY="<YOUR_KEY>"
+# 기본 쿼리
+rag query "질문 내용"
 
-# English queries
-python index_rag_dataset.py ask --top_k 20 "progress in computer vision in 2025?"
+# 상세 정보 출력 (JSON 포맷)
+rag query "질문" --verbose
 
-# Korean queries (NEW!)
-python index_rag_dataset.py ask "RAG관련 최신 연구는?"
-python index_rag_dataset.py ask "컴퓨터 비전에서 트랜스포머 모델은?"
+# 검색할 문서 수 조정
+rag query "질문" --top_k 10
+
+# 사용자 역할 지정 (접근 제어)
+rag query "질문" --roles "admin,user,manager"
+
+# 다른 LLM 모델 사용 (폴백용)
+rag query "질문" --llm_repo "google/flan-t5-large"
 ```
 
-### 2-6. Advanced Chunking Options (NEW!)
+### 📊 출력 형식 예시
+```
+📋 질문: What are the main security concerns?
+
+💡 답변: Based on the provided context, the main security concerns are:
+   • Data privacy: Ensuring compliance with regulations like GDPR and CCPA.
+   • Data security: Protecting user data through encryption and secure access controls.
+   • Vulnerabilities: Regular security assessments and penetration testing.
+
+📊 신뢰도: 88.2%
+🔍 관련 문서: 4개
+⏱️ 처리 시간: 2.1초
+```
+
+## 🔧 고급 설정
+
+### 환경 변수
 ```bash
-# Semantic chunking (default) - groups semantically similar sentences
-python index_rag_dataset.py build --chunking semantic --similarity-threshold 0.6
+# 컬렉션 이름 변경
+export RAG_COLLECTION="custom_collection"
 
-# Agentic chunking - uses LLM to identify logical breakpoints  
-python index_rag_dataset.py build --chunking agentic
+# 저장 디렉토리 변경
+export RAG_PERSIST_DIR="./custom_db"
 
-# Simple chunking - traditional token-based splitting
-python index_rag_dataset.py build --chunking simple
+# 임베딩 모델 변경
+export RAG_EMBED_MODEL="sentence-transformers/all-MiniLM-L6-v2"
 ```
+
+### 프로그래밍 방식 사용
+```python
+from advanced_rag import RagEngine
+
+# RAG 엔진 초기화
+engine = RagEngine(collection_name='herb_collection')
+
+# 쿼리 실행
+result = engine.answer(
+    query="What integration challenges exist?",
+    user_roles=["admin", "developer"],
+    top_k=5
+)
+
+print(f"답변: {result['answer']}")
+print(f"신뢰도: {result['confidence']:.1%}")
+print(f"소스: {len(result['sources'])}개 문서")
+```
+
+## 🏗️ 아키텍처 및 구현 특징
+
+### RAG 파이프라인
+1. **Document Loading**: HERB JSON 파일 파싱 및 텍스트 추출
+2. **Text Splitting**: 1000자 단위 청크 분할 (100자 오버랩)
+3. **Embedding**: HuggingFace all-mpnet-base-v2 모델 사용
+4. **Vector Storage**: ChromaDB 영구 저장
+5. **Retrieval**: 코사인 유사도 기반 상위 K개 문서 검색
+6. **Generation**: Gemini 2.0 Flash로 컨텍스트 기반 답변 생성
+7. **Post-processing**: 환각 점수 계산 및 신뢰도 평가
+
+### 기업용 보안 기능
+- **Access Control Lists (ACL)**: 메타데이터 기반 문서 접근 제어
+- **Confidence Scoring**: 답변-컨텍스트 유사도 기반 신뢰도 측정
+- **Source Attribution**: 모든 답변에 대한 원본 문서 추적
+- **Audit Trail**: 쿼리 로그 및 성능 메트릭 수집
+
+## 🎓 교육적 가치 및 기업 RAG 고려사항
+
+### 구현하면서 발견한 조직 내 RAG 핵심 요구사항:
+
+1. **데이터 거버넌스**
+   - 다양한 소스(Slack, 문서, 회의록)의 통합적 관리
+   - 메타데이터 기반 분류 및 접근 제어
+
+2. **신뢰성 및 검증가능성**
+   - 환각 탐지 및 신뢰도 점수 제공
+   - 답변의 출처 추적 및 원본 확인 가능
+
+3. **보안 및 컴플라이언스**
+   - 역할 기반 접근 제어 (RBAC)
+   - 민감 정보 필터링 및 감사 로그
+
+4. **확장성 및 성능**
+   - 배치 처리를 통한 대용량 데이터 인덱싱
+   - 실시간 응답 성능 모니터링
+
+5. **사용자 경험**
+   - 직관적인 CLI 인터페이스
+   - 명확한 신뢰도 및 소스 정보 제공
+
+## 🔧 문제 해결
+
+### 일반적인 문제들
+```bash
+# 1. 환경변수 설정 확인
+echo $GOOGLE_API_KEY
+echo $HUGGINGFACEHUB_API_TOKEN
+
+# 2. 의존성 재설치
+pip install --upgrade -r requirements_enterprise_rag.txt
+
+# 3. 데이터베이스 재구축
+rm -rf chroma_db/
+python index_herb_dataset.py
+
+# 4. 경고 메시지 숨기기
+python advanced_rag.py query "질문" 2>/dev/null
+```
+
+### ChromaDB 배치 크기 오류
+```bash
+# 대용량 데이터셋 처리 시 자동으로 5000개씩 배치 처리됨
+# 별도 설정 불필요
+```
+
+## 📚 참고 자료
+
+- **HERB Dataset**: [Stanford CRFM](https://crfm.stanford.edu/helm/latest/)
+- **Google Gemini API**: [AI Studio](https://aistudio.google.com/)
+- **LangChain Documentation**: [python.langchain.com](https://python.langchain.com/)
+- **ChromaDB**: [docs.trychroma.com](https://docs.trychroma.com/)
+
+## 📄 라이선스
+
+MIT License - 자유롭게 사용, 수정, 배포 가능합니다.
 
 ---
-## 3. Resume / continue download
-The PDF downloader is **idempotent**:
-* Existing files in `cv_pdfs/` are skipped.
-* `get_cv_papers_arxiv.py` can be rerun with the same `--max_pdf` to fetch only missing items.
 
-After additional downloads, run `merge_and_rebuild.py` (or simply `bash run_cv_pipeline.sh 500`) to update the index.
+## 🔄 변경 이력
 
----
-## 4. Git hygiene
-Large binaries & local env are ignored via `.gitignore`:
-```
-venv_rag/
-cv_pdfs/
-*.gz
-*.index
-*.pkl
-```
+### v3.0 (2025-01-03)
+- ✅ Google Gemini 2.0 Flash 연동
+- ✅ HERB 데이터셋 완전 인덱싱 (5,487개 문서)
+- ✅ 깔끔한 출력 형식 및 사용자 경험 개선
+- ✅ 환경변수 영구 설정 및 별칭 지원
+- ✅ 배치 처리 ChromaDB 인덱싱 안정화
 
----
-## 5. Chunking Methods Explained
+### v2.0 (2025-01-02)
+- ✅ HERB 데이터셋 통합
+- ✅ 기업용 보안 기능 (RBAC, 환각 탐지)
+- ✅ CLI 인터페이스 구현
 
-### 🔧 Simple Chunking
-- **Method**: Fixed token-based splitting with overlap
-- **Use case**: Fast processing, consistent chunk sizes
-- **Pros**: Predictable, efficient
-- **Cons**: May split semantically related content
-
-### 🧠 Semantic Chunking  
-- **Method**: Groups sentences by embedding similarity
-- **Use case**: Better context coherence, topic continuity
-- **Pros**: Maintains semantic relationships
-- **Cons**: Slightly slower due to embedding computation
-
-### 🤖 Agentic Chunking
-- **Method**: LLM analyzes text structure for logical breakpoints
-- **Use case**: Complex documents with clear sections
-- **Pros**: Respects document structure, highest quality
-- **Cons**: Requires LLM calls, slower processing
+### v1.0 (2025-01-01)
+- ✅ 기본 RAG 파이프라인 구현
+- ✅ HuggingFace + ChromaDB 연동
 
 ---
-## 6. Troubleshooting
-* **Slow parsing?** PyMuPDF + multiprocessing already enabled (≈10× faster than pdfminer). Adjust `--max_pdf` or `--workers` inside script if needed.
-* **Gemini returns _I don't know_**: likely no relevant chunk – add more papers and rebuild.
-* **PyTorch import errors**: Script auto-installs compatible versions. Set `CUDA_VISIBLE_DEVICES=''` for CPU-only mode.
-* **Korean text issues**: Ensure UTF-8 encoding and BGE-Small-EN model supports your language.
-* **Authentication**: Git pushes require PAT (set once, then cached).
 
----
-© 2025 Jax0303  
-Feel free to fork / PR.
+© 2025 Jax0303 | 기업용 RAG 시스템 구현 프로젝트

@@ -154,7 +154,17 @@ def build_index(repo_dir: Path, chunk_size: int, chunk_overlap: int, max_files: 
         return
 
     engine = RagEngine(collection_name="herb_collection", persist_dir="./chroma_db")
-    engine.vectordb.add_documents(all_docs)
+    
+    # ChromaDB 배치 크기 제한 (최대 5000개씩 처리)
+    BATCH_SIZE = 5000
+    total_batches = (len(all_docs) + BATCH_SIZE - 1) // BATCH_SIZE
+    
+    for i in range(0, len(all_docs), BATCH_SIZE):
+        batch = all_docs[i:i + BATCH_SIZE]
+        batch_num = (i // BATCH_SIZE) + 1
+        print(f"   배치 {batch_num}/{total_batches} 처리 중... ({len(batch)}개 문서)")
+        engine.vectordb.add_documents(batch)
+    
     engine.vectordb.persist()
     print("✅ 인덱스 구축 완료 → ./chroma_db")
 
