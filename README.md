@@ -1,5 +1,7 @@
 # Enterprise RAG with HERB Dataset
 
+> **2025-08-04: 코드가 최신 LangChain 패키지(`langchain-huggingface`, `langchain-chroma`)로 마이그레이션되었습니다. 기존 `langchain_community`/`langchain_core` 대신 새로운 패키지와 import 경로를 사용합니다. 자세한 내용은 커밋 로그 참고!**
+
 기업 특화 Retrieval-Augmented Generation 시스템 with **HERB (Heterogeneous Enterprise RAG Benchmark)** 데이터셋과 **Google Gemini 2.5 Flash 및 기타 LLM** 연동.
 
 ## 🚀 프로젝트 개요
