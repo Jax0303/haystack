@@ -28,14 +28,14 @@ import time
 from pathlib import Path
 from typing import List, Sequence
 
-from langchain.document_loaders import TextLoader
-from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import Chroma
-from langchain.llms import HuggingFaceHub
+from langchain_community.document_loaders import TextLoader
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_core.documents import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_chroma import Chroma
+from langchain_community.llms import HuggingFaceHub
 from langchain.chains import RetrievalQA
-from langchain.schema.retriever import BaseRetriever
+from langchain_core.retrievers import BaseRetriever
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
@@ -303,11 +303,11 @@ class RagEngine:
             )
         elif os.getenv("OPENAI_API_KEY"):
             # OpenAI GPT 사용 (2순위)
-            from langchain.llms import OpenAI
+            from langchain_community.llms import OpenAI
             llm = OpenAI(temperature=0.0, max_tokens=512)
         elif os.getenv("HUGGINGFACEHUB_API_TOKEN"):
             # HuggingFace Hub 오픈소스 모델 사용 (3순위)
-            from langchain.llms import HuggingFaceHub
+            from langchain_community.llms import HuggingFaceHub
             llm = HuggingFaceHub(
                 repo_id=llm_repo,                        # 지정된 모델 저장소
                 model_kwargs={"temperature": 0.1, "max_length": 512},
@@ -315,7 +315,7 @@ class RagEngine:
             )
         else:
             # 폴백: API 키 없을 시 테스트용 가짜 응답 생성기
-            from langchain.llms.fake import FakeListLLM
+            from langchain_community.llms.fake import FakeListLLM
             llm = FakeListLLM(responses=[
                 "검색된 문서에 따르면, 고객들이 주로 불만을 제기한 기능은 느린 응답 시간, 복잡한 사용자 인터페이스, 통합 기능 부족입니다.",
                 "주요 고객 불만사항은 성능 문제, 사용성 문제, 누락된 기능에 집중되어 있습니다.", 
@@ -403,23 +403,9 @@ def main(argv: list[str] | None = None):
         )
         dur = time.perf_counter() - start
         
-        # 깔끔한 출력 형식
+        # 질문-답변만 출력
         print(f"📋 질문: {args.question}")
-        print()
         print(f"💡 답변: {res['answer']}")
-        print()
-        print(f"📊 신뢰도: {res['confidence']:.1%}")
-        print(f"🔍 관련 문서: {len(res['sources'])}개")
-        print(f"⏱️ 처리 시간: {dur:.1f}초")
-        
-        if res['hallucination_flag']:
-            print("⚠️  주의: 환각 가능성 있음")
-        
-        # 상세 정보가 필요한 경우 JSON 출력
-        if args.verbose:
-            print("\n" + "="*50)
-            print("상세 정보:")
-            print(json.dumps({**res, "elapsed_sec": dur}, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

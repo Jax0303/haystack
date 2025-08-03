@@ -171,7 +171,7 @@ def load_docs_from_file(json_path: Path, splitter) -> List[Document]:
                 "artifact_type": art_type,                        # 아티팩트 유형 (슬랙, 문서 등)
                 "artifact_id": item.get("id", f"{art_key}_{idx}"), # 개별 아티팩트 ID (없으면 자동 생성)
                 "source_file": json_path.name,                    # 원본 JSON 파일명
-                "acl": ["*"]                                     # 접근 제어 (기본: 모든 사용자 허용)
+                "acl": "*"                                      # 접근 제어 (기본: 모든 사용자 허용)
             }
             
             # 긴 컨텐츠를 작은 청크로 분할 (RAG 검색 효율성 향상)
