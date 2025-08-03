@@ -1,10 +1,10 @@
 # Enterprise RAG with HERB Dataset
 
-기업 특화 Retrieval-Augmented Generation 시스템 with **HERB (Heterogeneous Enterprise RAG Benchmark)** 데이터셋과 **Google Gemini 2.0 Flash** 연동.
+기업 특화 Retrieval-Augmented Generation 시스템 with **HERB (Heterogeneous Enterprise RAG Benchmark)** 데이터셋과 **Google Gemini 2.5 Flash 및 기타 LLM** 연동.
 
 ## 🚀 프로젝트 개요
 
-본 프로젝트는 **조직 내 RAG 활용**을 위한 기업 특화 기능들을 구현한 엔터프라이즈급 RAG 시스템입니다. 실제 기업 데이터셋(HERB)과 최신 LLM(Gemini 2.0)을 활용하여 실무에서 필요한 보안, 거버넌스, 감사 기능을 제공합니다.
+본 프로젝트는 **조직 내 RAG 활용**을 위한 기업 특화 기능들을 구현해본 실무 기반 RAG 시스템
 
 ### 🏢 핵심 Enterprise 기능
 - **🔐 Role-Based Access Control (RBAC)**: 사용자 역할별 문서 접근 제어
@@ -14,10 +14,10 @@
 - **🔍 Multi-Artifact Support**: Slack, 문서, 회의록, PR 등 다양한 소스 통합
 
 ### 🛠️ 기술 스택
-- **LLM**: Google Gemini 2.0 Flash (최신 실험 모델)
+- **LLM**: Google Gemini 2.5 Flash (최신 실험 모델)
 - **Vector DB**: ChromaDB (5,487개 문서 인덱싱)
 - **Embeddings**: HuggingFace sentence-transformers/all-mpnet-base-v2
-- **Framework**: LangChain + Python 3.12
+- **Framework**: LangChain최신 패키지 + Python 3.12
 - **Dataset**: HERB (Heterogeneous Enterprise RAG Benchmark)
 
 ## 📊 HERB Dataset 정보
@@ -41,12 +41,12 @@
 ## 📁 프로젝트 구조
 
 ```
-├── advanced_rag.py                 # 🚀 메인 RAG 엔진 (RBAC, 환각탐지, CLI)
-├── index_herb_dataset.py           # 📊 HERB 데이터셋 다운로드 & 인덱싱
-├── requirements_enterprise_rag.txt # 📦 의존성 패키지 목록
-├── HERB/                          # 📁 HERB GitHub 클론 (자동 다운로드)
-├── chroma_db/                     # 🗃️ 벡터 DB 저장소 (5,487개 문서)
-└── README.md                      # 📖 본 문서
+├── advanced_rag.py                 #  메인 RAG 엔진 (RBAC, 환각탐지, CLI)
+├── index_herb_dataset.py           #  HERB 데이터셋 다운로드 & 인덱싱
+├── requirements_enterprise_rag.txt #  의존성 패키지 목록
+├── HERB/                          #  HERB GitHub 클론 (자동 다운로드)
+├── chroma_db/                     #  벡터 DB 저장소 (5,487개 문서)
+└── README.md                      #  본 문서
 ```
 
 ## 🚀 빠른 시작 가이드
