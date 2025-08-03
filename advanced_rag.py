@@ -115,28 +115,34 @@ def load_and_split_docs(
 # ---------------------------------------------------------------------------
 
 class AclRetriever(BaseRetriever):
-    """Wrap an existing vector store and enforce ACL filtering."""
+    """기존 벡터 저장소를 래핑하여 ACL(접근제어) 필터링을 적용하는 클래스"""
     
-    vectordb: Chroma
-    allowed_roles: Sequence[str] = ["*"]  
-    top_k: int = 4
+    vectordb: Chroma                           # ChromaDB 벡터 저장소
+    allowed_roles: Sequence[str] = ["*"]       # 허용된 사용자 역할 목록 (기본값: 모든 역할)
+    top_k: int = 4                             # 반환할 최대 문서 수
 
     class Config:
-        arbitrary_types_allowed = True
+        arbitrary_types_allowed = True             # Pydantic에서 임의 타입 허용
 
     def _is_authorised(self, doc: Document) -> bool:
-        doc_roles = doc.metadata.get("acl", ["*"])
-        if "*" in doc_roles:
+        """문서의 ACL 메타데이터를 확인하여 사용자 접근 권한을 검증"""
+        doc_roles = doc.metadata.get("acl", ["*"])    # 문서의 접근 권한 역할 목록
+        if "*" in doc_roles:                         # 와일드카드('*')는 모든 사용자 허용
             return True
+        # 사용자 역할과 문서 역할의 교집합이 있으면 접근 허용
         return bool(set(doc_roles) & set(self.allowed_roles))
 
     def similarity_search(self, query: str) -> list[Document]:
+        """유사도 검색 후 ACL 필터링을 적용하여 권한이 있는 문서만 반환"""
+        # 충분한 후보 문서를 가져옴 (top_k의 2배)
         candidates = self.vectordb.similarity_search(query, k=self.top_k * 2)
+        # 접근 권한이 있는 문서만 필터링
         authorised = [d for d in candidates if self._is_authorised(d)]
-        return authorised[: self.top_k]
+        return authorised[: self.top_k]               # 최종적으로 top_k개만 반환
 
-    # Expose as LangChain retriever interface
-    def _get_relevant_documents(self, query: str) -> list[Document]:  # noqa: D401
+    # LangChain retriever 인터페이스 구현
+    def _get_relevant_documents(self, query: str) -> list[Document]:
+        """LangChain 표준 인터페이스를 위한 래퍼 메서드"""
         return self.similarity_search(query)
 
 
@@ -145,38 +151,46 @@ class AclRetriever(BaseRetriever):
 # ---------------------------------------------------------------------------
 
 def compute_similarity(a_emb: list[float], b_emb: list[float]) -> float:
-    """Cosine similarity for small lists."""
-    import numpy as np  # local import to keep base deps lean
+    """두 임베딩 벡터 간의 코사인 유사도를 계산 (작은 리스트용 최적화)"""
+    import numpy as np  # 의존성을 최소화하기 위한 지역 import
 
-    a = np.array(a_emb)
-    b = np.array(b_emb)
-    denom = (np.linalg.norm(a) * np.linalg.norm(b)) or 1.0
-    dot_product = np.dot(a, b)
-    return float(dot_product / denom)
+    a = np.array(a_emb)                         # 첫 번째 임베딩 벡터
+    b = np.array(b_emb)                         # 두 번째 임베딩 벡터
+    denom = (np.linalg.norm(a) * np.linalg.norm(b)) or 1.0  # 분모 (0 방지)
+    dot_product = np.dot(a, b)                  # 내적 계산
+    return float(dot_product / denom)           # 코사인 유사도 반환 (-1 ~ 1)
 
 
 def hallucination_score(answer: str, context: list[Document], embedder) -> float:
-    """Rough metric: similarity of answer vs. mean of context embeddings.
-
-    Returns a *distance* score in [0, 2] where < 0.7 usually indicates
-    strong grounding; > 1.0 might be hallucination.
+    """환각(Hallucination) 탐지를 위한 점수 계산
+    
+    LLM 답변과 검색된 문서들의 임베딩 유사도를 비교하여 환각 가능성을 측정
+    
+    반환값: [0, 2] 범위의 거리 점수
+    - < 0.7: 강한 근거 기반 (신뢰도 높음)
+    - > 1.0: 환각 가능성 있음 (신뢰도 낮음)
     """
     if not context or not answer:
-        return 1.0  # 중간값 반환
+        return 1.0  # 컨텍스트나 답변이 없으면 중간값 반환
         
     try:
+        # LLM 답변을 임베딩으로 변환
         ans_emb = embedder.embed_query(answer)
+        # 검색된 모든 문서의 내용을 임베딩으로 변환
         ctx_embs = [embedder.embed_query(doc.page_content) for doc in context]
         import numpy as np
 
         if not ctx_embs:
             return 1.0
             
+        # 컨텍스트 임베딩들의 평균 계산 (전체 검색 맥락 대표)
         ctx_mean = np.mean(ctx_embs, axis=0)
-        sim = compute_similarity(ans_emb, ctx_mean.tolist())  # -1..1
-        return 1.0 - ((sim + 1) / 2)  # convert to distance ~ 0(best)..2(worst)
+        # 답변과 컨텍스트 평균 간의 코사인 유사도 계산
+        sim = compute_similarity(ans_emb, ctx_mean.tolist())  # -1..1 범위
+        # 유사도를 거리 점수로 변환 (0=최고, 2=최악)
+        return 1.0 - ((sim + 1) / 2)
     except Exception:
-        return 0.5  # 오류 시 안전한 기본값
+        return 0.5  # 오류 발생 시 안전한 기본값 반환
 
 
 # ---------------------------------------------------------------------------
@@ -184,17 +198,29 @@ def hallucination_score(answer: str, context: list[Document], embedder) -> float
 # ---------------------------------------------------------------------------
 
 class RagEngine:
-    def __init__(self, collection_name: str = "rag_collection", persist_dir: str = "./chroma_db", embedding_model: str = "sentence-transformers/all-mpnet-base-v2"):
-        self.collection_name = collection_name
-        self.persist_dir = persist_dir
-        self.embedding_model = embedding_model
+    """기업용 RAG(검색 증강 생성) 엔진의 메인 클래스"""
+    
+    def __init__(self, collection_name: str = "rag_collection", persist_dir: str = "./chroma_db", 
+                 embedding_model: str = "sentence-transformers/all-mpnet-base-v2"):
+        """RAG 엔진 초기화
+        
+        Args:
+            collection_name: ChromaDB 컬렉션 이름
+            persist_dir: 벡터 DB 저장 디렉토리
+            embedding_model: HuggingFace 임베딩 모델명
+        """
+        self.collection_name = collection_name     # 벡터 저장소 컬렉션명
+        self.persist_dir = persist_dir             # 디스크 저장 경로
+        self.embedding_model = embedding_model     # 사용할 임베딩 모델
 
-        # Initialize components
+        # 핵심 컴포넌트들 초기화
+        # HuggingFace 임베딩 모델 로드 (문서와 질의를 벡터로 변환)
         self.embedder = HuggingFaceEmbeddings(model_name=self.embedding_model)
+        # ChromaDB 벡터 저장소 초기화 (유사도 검색 및 영구 저장)
         self.vectordb = Chroma(
-            collection_name=self.collection_name,
-            embedding_function=self.embedder,
-            persist_directory=self.persist_dir,
+            collection_name=self.collection_name,     # 컬렉션 구분자
+            embedding_function=self.embedder,         # 임베딩 함수 연결
+            persist_directory=self.persist_dir,       # 디스크 저장 위치
         )
 
     # ------------------ ingestion ------------------
@@ -233,61 +259,91 @@ class RagEngine:
                 self.vectordb.add_documents(new_docs)
         self.vectordb.persist()
 
-    # ------------------ query ------------------
+    # ------------------ 질의응답 처리 ------------------
     def answer(
         self,
         query: str,
         *,
-        user_roles: Sequence[str] = ("*",),
-        top_k: int = 4,
-        llm_repo: str = "google/flan-t5-base",
-        hallucination_threshold: float = 0.35,
+        user_roles: Sequence[str] = ("*",),           # 사용자 역할 (기본: 모든 역할 허용)
+        top_k: int = 4,                               # 검색할 문서 수
+        llm_repo: str = "google/flan-t5-base",        # HuggingFace 모델명 (폴백용)
+        hallucination_threshold: float = 0.35,       # 환각 탐지 임계값
     ) -> dict:
+        """
+        사용자 질의에 대한 RAG 기반 답변 생성
+        
+        Args:
+            query: 사용자 질문
+            user_roles: 접근 권한이 있는 역할 목록
+            top_k: 유사도 검색할 문서 개수
+            llm_repo: HuggingFace 모델 저장소명 (API 키 없을 시 사용)
+            hallucination_threshold: 환각 판정 임계값 (0.35 = 35%)
+            
+        Returns:
+            dict: {
+                'answer': 생성된 답변,
+                'sources': 참조 문서 메타데이터 목록,
+                'confidence': 신뢰도 점수 (0~1),
+                'hallucination_flag': 환각 경고 플래그
+            }
+        """
+        # RBAC 필터링이 적용된 검색기 생성
         retriever = AclRetriever(vectordb=self.vectordb, allowed_roles=user_roles, top_k=top_k)
-        # LLM 우선순위: Gemini > OpenAI > HuggingFace > Fake
+        
+        # LLM 선택 우선순위: Gemini > OpenAI > HuggingFace > Fake
         import os
         if os.getenv("GOOGLE_API_KEY"):
-            # Google Gemini 2.5 사용 (최우선)
+            # Google Gemini 2.0 Flash 사용 (1순위 - 최신 실험 모델)
             from langchain_google_genai import ChatGoogleGenerativeAI
             llm = ChatGoogleGenerativeAI(
-                model="gemini-2.0-flash-exp",
+                model="gemini-2.0-flash-exp",            # 최신 실험 버전
                 google_api_key=os.getenv("GOOGLE_API_KEY"),
-                temperature=0.0,
-                max_tokens=512
+                temperature=0.0,                         # 결정적 응답 (변동성 최소화)
+                max_tokens=512                           # 응답 길이 제한
             )
         elif os.getenv("OPENAI_API_KEY"):
             # OpenAI GPT 사용 (2순위)
             from langchain.llms import OpenAI
             llm = OpenAI(temperature=0.0, max_tokens=512)
         elif os.getenv("HUGGINGFACEHUB_API_TOKEN"):
-            # HuggingFace Hub 사용 (3순위)
+            # HuggingFace Hub 오픈소스 모델 사용 (3순위)
             from langchain.llms import HuggingFaceHub
             llm = HuggingFaceHub(
-                repo_id=llm_repo,
+                repo_id=llm_repo,                        # 지정된 모델 저장소
                 model_kwargs={"temperature": 0.1, "max_length": 512},
-                task="text2text-generation"
+                task="text2text-generation"              # Text-to-Text 생성 태스크
             )
         else:
-            # 폴백: 검색 기반 가짜 응답
+            # 폴백: API 키 없을 시 테스트용 가짜 응답 생성기
             from langchain.llms.fake import FakeListLLM
             llm = FakeListLLM(responses=[
-                "Based on the retrieved documents, customers complained about slow response times, confusing user interface, and lack of integration features.",
-                "The main customer complaints focus on performance issues, usability problems, and missing functionality.", 
-                "According to the documents, frequent issues include system lag, poor navigation, and insufficient API support."
+                "검색된 문서에 따르면, 고객들이 주로 불만을 제기한 기능은 느린 응답 시간, 복잡한 사용자 인터페이스, 통합 기능 부족입니다.",
+                "주요 고객 불만사항은 성능 문제, 사용성 문제, 누락된 기능에 집중되어 있습니다.", 
+                "문서에 따르면 빈번한 문제로는 시스템 지연, 부실한 탐색 기능, 불충분한 API 지원 등이 있습니다."
             ])
+            
+        # LangChain RetrievalQA 체인 구성
         qa_chain = RetrievalQA.from_chain_type(
-            llm=llm,
-            retriever=retriever,
-            chain_type="stuff",
+            llm=llm,                                     # 선택된 LLM 모델
+            retriever=retriever,                         # RBAC 적용된 검색기
+            chain_type="stuff",                          # 모든 검색 문서를 하나로 합쳐서 프롬프트에 삽입
         )
+        
+        # 실제 답변 생성 실행
         answer = qa_chain.run(query)
+        
+        # 검색된 문서들 (환각 탐지용)
         docs = retriever.similarity_search(query)
+        
+        # 환각 점수 계산 (답변과 검색 문서 간 유사도 기반)
         score = hallucination_score(answer, docs, self.embedder)
+        
+        # 최종 응답 딕셔너리 구성
         return {
-            "answer": answer,
-            "sources": [d.metadata for d in docs],
-            "confidence": 1 - score,
-            "hallucination_flag": score > hallucination_threshold,
+            "answer": answer,                           # 생성된 답변
+            "sources": [d.metadata for d in docs],     # 참조 문서 메타데이터 목록
+            "confidence": 1 - score,                   # 신뢰도 (1 - 환각점수)
+            "hallucination_flag": score > hallucination_threshold,  # 환각 경고 플래그
         }
 
 
