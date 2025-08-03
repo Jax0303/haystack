@@ -175,29 +175,7 @@ result = engine.answer(
     top_k=5
 )
 
-print(f"답변: {result['answer']}")
-print(f"신뢰도: {result['confidence']:.1%}")
-print(f"소스: {len(result['sources'])}개 문서")
-```
-
-## 🏗️ 아키텍처 및 구현 특징
-
-### RAG 파이프라인
-1. **Document Loading**: HERB JSON 파일 파싱 및 텍스트 추출
-2. **Text Splitting**: 1000자 단위 청크 분할 (100자 오버랩)
-3. **Embedding**: HuggingFace all-mpnet-base-v2 모델 사용
-4. **Vector Storage**: ChromaDB 영구 저장
-5. **Retrieval**: 코사인 유사도 기반 상위 K개 문서 검색
-6. **Generation**: Gemini 2.0 Flash로 컨텍스트 기반 답변 생성
-7. **Post-processing**: 환각 점수 계산 및 신뢰도 평가
-
-### 기업용 보안 기능
-- **Access Control Lists (ACL)**: 메타데이터 기반 문서 접근 제어
-- **Confidence Scoring**: 답변-컨텍스트 유사도 기반 신뢰도 측정
-- **Source Attribution**: 모든 답변에 대한 원본 문서 추적
-- **Audit Trail**: 쿼리 로그 및 성능 메트릭 수집
-
-## 🎓 교육적 가치 및 기업 RAG 고려사항
+print(f"답변: {result['answer']}")타 고려사항
 
 ### 구현하면서 발견한 조직 내 RAG 핵심 요구사항:
 
